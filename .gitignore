@@ -1,0 +1,23 @@
+# Build artifacts
+/bin/
+/build/
+/dist/
+*.exe
+*.out
+
+# Go
+/vendor/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Rust
+/target/
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
