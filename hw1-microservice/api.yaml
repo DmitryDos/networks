@@ -1,0 +1,154 @@
+openapi: 3.0.3
+info:
+  title: Notes microservice
+  version: 0.1.0
+servers:
+  - url: http://localhost:8080
+paths:
+  /notes:
+    get:
+      summary: List notes
+      parameters:
+        - $ref: "#/components/parameters/Accept"
+      responses:
+        "200":
+          description: Array of notes
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Note" }
+            application/xml:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Note" }
+    post:
+      summary: Create a note
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/NoteInput" }
+          application/xml:
+            schema: { $ref: "#/components/schemas/NoteInput" }
+      responses:
+        "201":
+          description: Created
+          headers:
+            ETag: { $ref: "#/components/headers/ETag" }
+            Location:
+              description: Path of the created note
+              schema: { type: string }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Note" }
+            application/xml:
+              schema: { $ref: "#/components/schemas/Note" }
+        "405": { $ref: "#/components/responses/Error" }
+  /notes/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    get:
+      summary: Get a note
+      parameters:
+        - $ref: "#/components/parameters/Accept"
+      responses:
+        "200":
+          description: Note
+          headers:
+            ETag: { $ref: "#/components/headers/ETag" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Note" }
+            application/xml:
+              schema: { $ref: "#/components/schemas/Note" }
+        "404": { $ref: "#/components/responses/Error" }
+    put:
+      summary: Replace a note (optimistic lock via If-Match)
+      parameters:
+        - $ref: "#/components/parameters/IfMatch"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/NoteInput" }
+          application/xml:
+            schema: { $ref: "#/components/schemas/NoteInput" }
+      responses:
+        "200":
+          description: Updated note
+          headers:
+            ETag: { $ref: "#/components/headers/ETag" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Note" }
+            application/xml:
+              schema: { $ref: "#/components/schemas/Note" }
+        "404": { $ref: "#/components/responses/Error" }
+        "412": { $ref: "#/components/responses/Error" }
+    delete:
+      summary: Delete a note (optional optimistic lock via If-Match)
+      parameters:
+        - $ref: "#/components/parameters/IfMatch"
+      responses:
+        "204":
+          description: Deleted
+        "404": { $ref: "#/components/responses/Error" }
+        "412": { $ref: "#/components/responses/Error" }
+components:
+  parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    Accept:
+      name: Accept
+      in: header
+      required: false
+      description: Selects JSON or XML representation
+      schema:
+        type: string
+        enum: [application/json, application/xml]
+        default: application/json
+    IfMatch:
+      name: If-Match
+      in: header
+      required: false
+      description: ETag for optimistic concurrency; "*" matches any existing note
+      schema: { type: string }
+  headers:
+    ETag:
+      description: Entity tag of the current note version
+      schema: { type: string }
+  responses:
+    Error:
+      description: Error payload
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+        application/xml:
+          schema: { $ref: "#/components/schemas/Error" }
+  schemas:
+    Note:
+      type: object
+      required: [id, title, content, version, createdAt, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string }
+        content: { type: string }
+        version: { type: integer, minimum: 1 }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    NoteInput:
+      type: object
+      required: [title, content]
+      properties:
+        title: { type: string }
+        content: { type: string }
+    Error:
+      type: object
+      required: [status, message]
+      properties:
+        status: { type: integer }
+        message: { type: string }
