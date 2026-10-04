@@ -57,3 +57,48 @@ curl -o /dev/null -w '%{http_code}\n' -X PUT http://localhost:8080/notes/<id> \
   -d '{"title":"updated","content":"changed"}'
 # 200
 ```
+
+## HTTP/2 (h2c)
+
+```
+curl -D - --http2-prior-knowledge http://localhost:8080/notes
+```
+
+```
+HTTP/2 200
+content-type: application/json; charset=utf-8
+```
+
+## gRPC
+
+```
+grpcurl -plaintext -proto notes.proto -d '{"title":"g","content":"viaGrpc"}' \
+  localhost:8080 notes.NoteService/Create
+```
+
+```
+{
+  "id": "cc4106f7-e979-4c92-becc-7f0e03d4d36d",
+  "title": "g",
+  "content": "viaGrpc",
+  "version": 1,
+  "createdAt": "2026-10-04T12:32:10.178Z",
+  "updatedAt": "2026-10-04T12:32:10.178Z"
+}
+```
+
+```
+grpcurl -plaintext -proto notes.proto -d '{}' localhost:8080 notes.NoteService/List
+grpcurl -plaintext -proto notes.proto -d '{"id":"<id>"}' localhost:8080 notes.NoteService/Get
+```
+
+```
+grpcurl -plaintext -proto notes.proto -d '{"id":"nope"}' \
+  localhost:8080 notes.NoteService/Get
+```
+
+```
+ERROR:
+  Code: NotFound
+  Message: not found
+```

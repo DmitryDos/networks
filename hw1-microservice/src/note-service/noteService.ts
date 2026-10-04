@@ -3,6 +3,7 @@ import { createHttpClient, HttpClient } from "../http-client/httpClient";
 import { Note, NoteInput, NotePatch, NoteNotFoundError, PreconditionFailedError, etagOf } from "./note";
 import { InMemoryNotesStore, NotesStore } from "./noteStore";
 import { createNoteRoutes } from "./rest/routes";
+import { createNoteHttp2Handler } from "./http2/handler";
 
 export interface NoteServiceOptions {
     port: number;
@@ -64,7 +65,7 @@ export class NoteService {
     }
 
     start(): void {
-        this.http.listen(this.options.port, createNoteRoutes(this));
+        this.http.listen(this.options.port, createNoteRoutes(this), createNoteHttp2Handler(this));
     }
 
     stop(): void {

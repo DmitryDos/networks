@@ -1,12 +1,14 @@
 import net from "node:net";
 import { firstLine, isHttp09 } from "./lib/framing";
 import { Handler } from "./lib/message";
+import { Http2Handler } from "./http2.0/message";
 import { serveHttp09 } from "./http0.9/serve";
 import { serveHttp11 } from "./http1.1/serve";
+import { serveHttp2 } from "./http2.0/serve";
 
 const HTTP2_PREFACE_LINE = "PRI * HTTP/2.0";
 
-export function serveConnection(socket: net.Socket, handler: Handler): void {
+export function serveConnection(socket: net.Socket, handler: Handler, http2Handler?: Http2Handler): void {
     let buffer = Buffer.alloc(0);
     let decided = false;
 
@@ -24,8 +26,8 @@ export function serveConnection(socket: net.Socket, handler: Handler): void {
         }
         decided = true;
         socket.off("data", onData);
-        if (line === HTTP2_PREFACE_LINE) {
-            notImplemented(socket);
+        if (http2Handler && line === HTTP2_PREFACE_LINE) {
+            serveHttp2(socket, http2Handler, buffer);
         } else if (isHttp09(line)) {
             serveHttp09(socket, handler, buffer);
         } else {
@@ -35,8 +37,4 @@ export function serveConnection(socket: net.Socket, handler: Handler): void {
 
     socket.on("data", onData);
     socket.on("error", () => undefined);
-}
-
-function notImplemented(socket: net.Socket): void {
-    socket.destroy();
 }
