@@ -1,0 +1,65 @@
+services:
+  certs-init:
+    image: docker.io/library/alpine:3.20
+    volumes:
+      - ./certs:/certs
+    command: sh -c "unset HTTP_PROXY HTTPS_PROXY http_proxy https_proxy ALL_PROXY all_proxy NO_PROXY no_proxy; apk add --no-cache openssl && cd /certs && sh gen.sh"
+
+  mailhog:
+    image: docker.io/mailhog/mailhog
+    ports:
+      - "8025:8025"
+
+  notes:
+    build:
+      context: ../hw1-microservice
+      dockerfile: ../hw3-service-mesh/docker/notes.Dockerfile
+    expose:
+      - "8080"
+
+  notes-proxy:
+    image: docker.io/library/nginx:alpine
+    depends_on:
+      certs-init:
+        condition: service_completed_successfully
+      notes:
+        condition: service_started
+    volumes:
+      - ./nginx/notes-proxy.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./certs:/etc/mesh/certs:ro
+    ports:
+      - "8443:8443"
+
+  mail-proxy:
+    image: docker.io/library/nginx:alpine
+    depends_on:
+      certs-init:
+        condition: service_completed_successfully
+      notes-proxy:
+        condition: service_started
+    volumes:
+      - ./nginx/mail-proxy.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./certs:/etc/mesh/certs:ro
+    expose:
+      - "9080"
+
+  mail:
+    build:
+      context: ./mail-service
+      dockerfile: ../docker/node.Dockerfile
+    depends_on:
+      mail-proxy:
+        condition: service_started
+      mailhog:
+        condition: service_started
+    environment:
+      NOTES_URL: http://mail-proxy:9080
+      SMTP_HOST: mailhog
+      SMTP_PORT: "1025"
+      MAIL_TO: user@example.com
+      PORT: "9000"
+      HTTP_PROXY: ""
+      HTTPS_PROXY: ""
+      NO_PROXY: "*"
+    ports:
+      - "9000:9000"
