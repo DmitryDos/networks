@@ -6,7 +6,7 @@ notes (hw1) и mail за nginx-сайдкарами с mTLS, трафик меж
 
 ```
 cd hw3-service-mesh
-podman compose up --build
+docker compose up --build
 ```
 
 Проверка:
